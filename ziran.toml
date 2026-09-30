@@ -1,0 +1,15 @@
+[package]
+name = "Oqs"
+module_roots = ["src", "tests"]
+
+[toolchain]
+git = "https://github.com/ziranlang/ziran.git"
+ref = "master"
+
+[dependencies.liboqs]
+git = "https://github.com/open-quantum-safe/liboqs.git"
+ref = "main"
+source = true
+
+[exports]
+Oqs = "src/oqs.zi"
