@@ -12,4 +12,4 @@ ref = "main"
 source = true
 
 [exports]
-Oqs = "src/oqs.zi"
+Oqs = "src/Oqs.zi"

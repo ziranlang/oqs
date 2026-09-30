@@ -1,4 +1,4 @@
-#import "oqs"
+#import "Oqs"
 
 public_key: [MlDsa44PublicKeyBytes]u8;
 secret_key: [MlDsa44SecretKeyBytes]u8;
