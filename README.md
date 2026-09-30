@@ -1,6 +1,6 @@
 # Oqs
 
-Post-quantum signatures for Ziran, from [liboqs](https://github.com/open-quantum-safe/liboqs)
+Post-quantum signatures and key exchange for Ziran, from [liboqs](https://github.com/open-quantum-safe/liboqs)
 (Open Quantum Safe).
 
 ```sh
@@ -30,19 +30,39 @@ Sign :: (message: []u8) -> bool {
 | `RandomBytes(output)` | Fills bytes from the system's secure random source |
 | `Cleanse(memory)` | Zeroes secrets in a way the compiler keeps |
 
-The wrappers take slices and refuse buffers too small for a key or
-signature, and lengths a 32-bit `size_t` cannot hold.
+`MlKem768KeyPair`, `MlKem768Encapsulate`, and `MlKem768Decapsulate` provide
+ML-KEM-768 (FIPS 203) key exchange. Their key, ciphertext and shared-secret
+sizes are the `MlKem768*Bytes` constants. Decapsulation of an altered
+ciphertext produces a different shared secret; its success result alone
+does not authenticate a peer.
+
+The wrappers take slices and refuse buffers too small for keys, signatures,
+ciphertexts or shared secrets, and lengths a 32-bit `size_t` cannot hold.
+The current API covers ML-DSA-44 and ML-KEM-768, secure random bytes and
+secret cleansing. It does not expose every algorithm in liboqs.
 
 ## Linking liboqs
 
-The package pins liboqs as a source dependency. Build its static library
-from the locked checkout and link it with your program:
+The repository contains the Ziran API. The complete original liboqs source
+is a Git source dependency pinned to an exact commit in `ziran.lock`;
+`ziran fetch --locked` retrieves it and `ziran pkg path liboqs` locates it.
+This serves the same purpose as an upstream submodule through Ziran's
+package system.
+
+Build the pinned static and shared libraries on Linux:
 
 ```sh
-cmake -S "$(ziran pkg path liboqs)" -B build/liboqs \
-    -DBUILD_SHARED_LIBS=OFF -DOQS_BUILD_ONLY_LIB=ON -DOQS_USE_OPENSSL=OFF \
-    -DOQS_DIST_BUILD=OFF -DOQS_MINIMAL_BUILD=SIG_ml_dsa_44
-cmake --build build/liboqs --target oqs
+make native
 ```
 
-`make` does this and runs the tests.
+Then link with `LDFLAGS=-L/path/to/build/native LDLIBS=-loqs`. Go uses cgo
+(`CGO_ENABLED=1`); Rust carries the flags in its generated Cargo project.
+Python uses ctypes and the shared `liboqs.so`; add that directory to
+`LD_LIBRARY_PATH` when running it. C and C++ call the same native ABI.
+
+`make check` builds the libraries and exercises signing, tamper rejection,
+empty messages, key exchange, random bytes, cleansing and short-buffer
+rejection on C, C++, Go, Rust and Python, from source and saved `.zir`.
+`make check TARGET=go` selects one backend. A C compiler, CMake, Python,
+Go and Cargo are required for the full check. The portable `.zib` VM does
+not call arbitrary C libraries; this package requires a native backend.

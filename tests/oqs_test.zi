@@ -1,13 +1,5 @@
 #import "Oqs"
 
-public_key: [MlDsa44PublicKeyBytes]u8;
-secret_key: [MlDsa44SecretKeyBytes]u8;
-other_public: [MlDsa44PublicKeyBytes]u8;
-other_secret: [MlDsa44SecretKeyBytes]u8;
-signature: [MlDsa44SignatureBytes]u8;
-message: [32]u8;
-random: [64]u8;
-
 AllZero :: (bytes: []u8) -> bool {
     index: s64 = 0
     while index < cast(s64)bytes.count {
@@ -20,6 +12,13 @@ AllZero :: (bytes: []u8) -> bool {
 // A signature verifies for its own message and key, and for nothing else.
 #program_export
 main :: () -> s32 {
+    public_key: [MlDsa44PublicKeyBytes]u8
+    secret_key: [MlDsa44SecretKeyBytes]u8
+    other_public: [MlDsa44PublicKeyBytes]u8
+    other_secret: [MlDsa44SecretKeyBytes]u8
+    signature: [MlDsa44SignatureBytes]u8
+    message: [32]u8
+    random_bytes: [64]u8
     if !MlDsa44KeyPair(public_key[:], secret_key[:]) { return 1 }
     if !MlDsa44KeyPair(other_public[:], other_secret[:]) { return 2 }
     index: s64 = 0
@@ -46,9 +45,34 @@ main :: () -> s32 {
     if MlDsa44Sign(signature[0:10], message[:], secret_key[:]) != -1 { return 10 }
     if MlDsa44Verify(message[:], signature[0:0], public_key[:]) { return 11 }
 
-    RandomBytes(random[:])
-    if AllZero(random[:]) { return 12 }
+    RandomBytes(random_bytes[:])
+    if AllZero(random_bytes[:]) { return 12 }
     Cleanse(secret_key[:])
     if !AllZero(secret_key[:]) { return 13 }
+    kem_public: [MlKem768PublicKeyBytes]u8
+    kem_secret: [MlKem768SecretKeyBytes]u8
+    ciphertext: [MlKem768CiphertextBytes]u8
+    shared: [MlKem768SharedSecretBytes]u8
+    recovered: [MlKem768SharedSecretBytes]u8
+    if !MlKem768KeyPair(kem_public[:], kem_secret[:]) { return 14 }
+    if !MlKem768Encapsulate(ciphertext[:], shared[:], kem_public[:]) { return 15 }
+    if !MlKem768Decapsulate(recovered[:], ciphertext[:], kem_secret[:]) { return 16 }
+    for i: 0..MlKem768SharedSecretBytes - 1 {
+        if shared[i] != recovered[i] { return 17 }
+    }
+    if MlKem768KeyPair(kem_public[0:1], kem_secret[:]) ||
+       MlKem768Encapsulate(ciphertext[0:1], shared[:], kem_public[:]) ||
+       MlKem768Decapsulate(recovered[:], ciphertext[0:1], kem_secret[:]) { return 18 }
+    // ML-KEM rejects a tampered ciphertext by deriving a different secret.
+    ciphertext[0] = ciphertext[0] ^ cast(u8)1
+    if !MlKem768Decapsulate(recovered[:], ciphertext[:], kem_secret[:]) { return 19 }
+    same: bool = true
+    for i: 0..MlKem768SharedSecretBytes - 1 {
+        if shared[i] != recovered[i] { same = false }
+    }
+    if same { return 20 }
+    Cleanse(kem_secret[:])
+    Cleanse(shared[:])
+    Cleanse(recovered[:])
     return 0
 }

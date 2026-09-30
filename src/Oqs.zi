@@ -1,12 +1,13 @@
-// Post-quantum signatures from liboqs (Open Quantum Safe) for Ziran.
+// Post-quantum signatures and key exchange from liboqs for Ziran.
 //
 // The package pins liboqs as a source dependency; a build links the static
-// library it builds from `ziran pkg path liboqs`, for example with only
-// ML-DSA-44: -DOQS_MINIMAL_BUILD=SIG_ml_dsa_44 -DOQS_BUILD_ONLY_LIB=ON.
+// library it builds from `ziran pkg path liboqs`. The Makefile enables
+// ML-DSA-44 signatures and ML-KEM-768 key exchange.
 // Lengths cross into C as size_t, which is 32 bits on some targets, so the
 // wrappers take slices and refuse lengths that do not fit.
 
-liboqs :: #system_library "liboqs";
+#scope_file
+liboqs :: #system_library "oqs";
 
 MlDsa44KeyPairRaw :: (public_key: *u8,
     secret_key: *u8) -> s32 #foreign liboqs "OQS_SIG_ml_dsa_44_keypair";
@@ -20,15 +21,27 @@ RandomBytesRaw :: (output: *u8,
     length: usize) #foreign liboqs "OQS_randombytes";
 CleanseRaw :: (memory: *void,
     length: usize) #foreign liboqs "OQS_MEM_cleanse";
+MlKem768KeyPairRaw :: (public_key: *u8,
+    secret_key: *u8) -> s32 #foreign liboqs "OQS_KEM_ml_kem_768_keypair";
+MlKem768EncapsulateRaw :: (ciphertext: *u8, shared_secret: *u8,
+    public_key: *u8) -> s32 #foreign liboqs "OQS_KEM_ml_kem_768_encaps";
+MlKem768DecapsulateRaw :: (shared_secret: *u8, ciphertext: *u8,
+    secret_key: *u8) -> s32 #foreign liboqs "OQS_KEM_ml_kem_768_decaps";
 
+#scope_export
 // Sizes of ML-DSA-44 (FIPS 204) keys and signatures, in bytes.
 MlDsa44PublicKeyBytes :: 1312
 MlDsa44SecretKeyBytes :: 2560
 MlDsa44SignatureBytes :: 2420
+MlKem768PublicKeyBytes :: 1184
+MlKem768SecretKeyBytes :: 2400
+MlKem768CiphertextBytes :: 1088
+MlKem768SharedSecretBytes :: 32
 
 // liboqs reports success as 0.
 OqsSuccess :: 0
 
+#scope_file
 // A length the target's size_t can hold.
 SizeFits :: (length: s64) -> bool {
     return length >= 0 && (size_of(usize) >= 8 || length <= 4294967295)
@@ -40,6 +53,7 @@ Start :: (bytes: []u8) -> *u8 {
 }
 
 // Fills a new key pair. Both slices must be at least the key sizes.
+#scope_export
 #program_export
 MlDsa44KeyPair :: (public_key: []u8, secret_key: []u8) -> bool {
     if public_key.count < MlDsa44PublicKeyBytes ||
@@ -84,4 +98,32 @@ RandomBytes :: (output: []u8) {
 Cleanse :: (memory: []u8) {
     if memory.count == 0 || !SizeFits(cast(s64)memory.count) { return }
     CleanseRaw(cast(*void)*memory[0], cast(usize)memory.count)
+}
+
+// ML-KEM-768 (FIPS 203) exchanges a 32-byte shared secret.
+#program_export
+MlKem768KeyPair :: (public_key: []u8, secret_key: []u8) -> bool {
+    if public_key.count < MlKem768PublicKeyBytes ||
+       secret_key.count < MlKem768SecretKeyBytes { return false }
+    return MlKem768KeyPairRaw(*public_key[0], *secret_key[0]) == OqsSuccess
+}
+
+#program_export
+MlKem768Encapsulate :: (ciphertext: []u8, shared_secret: []u8,
+    public_key: []u8) -> bool {
+    if ciphertext.count < MlKem768CiphertextBytes ||
+       shared_secret.count < MlKem768SharedSecretBytes ||
+       public_key.count < MlKem768PublicKeyBytes { return false }
+    return MlKem768EncapsulateRaw(*ciphertext[0], *shared_secret[0],
+        *public_key[0]) == OqsSuccess
+}
+
+#program_export
+MlKem768Decapsulate :: (shared_secret: []u8, ciphertext: []u8,
+    secret_key: []u8) -> bool {
+    if shared_secret.count < MlKem768SharedSecretBytes ||
+       ciphertext.count != MlKem768CiphertextBytes ||
+       secret_key.count < MlKem768SecretKeyBytes { return false }
+    return MlKem768DecapsulateRaw(*shared_secret[0], *ciphertext[0],
+        *secret_key[0]) == OqsSuccess
 }
