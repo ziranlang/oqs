@@ -10,11 +10,10 @@ ziran add https://github.com/ziranlang/oqs.git
 ```jai
 #import "oqs/Oqs"
 
-public_key: [MlDsa44PublicKeyBytes]u8;
-secret_key: [MlDsa44SecretKeyBytes]u8;
-signature: [MlDsa44SignatureBytes]u8;
-
 Sign :: (message: []u8) -> bool {
+    public_key: [MlDsa44PublicKeyBytes]u8
+    secret_key: [MlDsa44SecretKeyBytes]u8
+    signature: [MlDsa44SignatureBytes]u8
     if !MlDsa44KeyPair(public_key[:], secret_key[:]) { return false }
     length := MlDsa44Sign(signature[:], message, secret_key[:])
     return length > 0 &&
