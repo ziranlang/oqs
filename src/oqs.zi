@@ -1,0 +1,87 @@
+// Post-quantum signatures from liboqs (Open Quantum Safe) for Ziran.
+//
+// The package pins liboqs as a source dependency; a build links the static
+// library it builds from `ziran pkg path liboqs`, for example with only
+// ML-DSA-44: -DOQS_MINIMAL_BUILD=SIG_ml_dsa_44 -DOQS_BUILD_ONLY_LIB=ON.
+// Lengths cross into C as size_t, which is 32 bits on some targets, so the
+// wrappers take slices and refuse lengths that do not fit.
+
+liboqs :: #system_library "liboqs";
+
+MlDsa44KeyPairRaw :: (public_key: *u8,
+    secret_key: *u8) -> s32 #foreign liboqs "OQS_SIG_ml_dsa_44_keypair";
+MlDsa44SignRaw :: (signature: *u8, signature_length: *usize, message: *u8,
+    message_length: usize,
+    secret_key: *u8) -> s32 #foreign liboqs "OQS_SIG_ml_dsa_44_sign";
+MlDsa44VerifyRaw :: (message: *u8, message_length: usize, signature: *u8,
+    signature_length: usize,
+    public_key: *u8) -> s32 #foreign liboqs "OQS_SIG_ml_dsa_44_verify";
+RandomBytesRaw :: (output: *u8,
+    length: usize) #foreign liboqs "OQS_randombytes";
+CleanseRaw :: (memory: *void,
+    length: usize) #foreign liboqs "OQS_MEM_cleanse";
+
+// Sizes of ML-DSA-44 (FIPS 204) keys and signatures, in bytes.
+MlDsa44PublicKeyBytes :: 1312
+MlDsa44SecretKeyBytes :: 2560
+MlDsa44SignatureBytes :: 2420
+
+// liboqs reports success as 0.
+OqsSuccess :: 0
+
+// A length the target's size_t can hold.
+SizeFits :: (length: s64) -> bool {
+    return length >= 0 && (size_of(usize) >= 8 || length <= 4294967295)
+}
+
+Start :: (bytes: []u8) -> *u8 {
+    if bytes.count == 0 { return null }
+    return *bytes[0]
+}
+
+// Fills a new key pair. Both slices must be at least the key sizes.
+#program_export
+MlDsa44KeyPair :: (public_key: []u8, secret_key: []u8) -> bool {
+    if public_key.count < MlDsa44PublicKeyBytes ||
+        secret_key.count < MlDsa44SecretKeyBytes { return false }
+    return MlDsa44KeyPairRaw(*public_key[0], *secret_key[0]) == OqsSuccess
+}
+
+// Signs `message` with `secret_key` into `signature`, which must hold
+// MlDsa44SignatureBytes. Returns the signature's length, or -1.
+#program_export
+MlDsa44Sign :: (signature: []u8, message: []u8, secret_key: []u8) -> s64 {
+    if signature.count < MlDsa44SignatureBytes ||
+        secret_key.count < MlDsa44SecretKeyBytes ||
+        !SizeFits(cast(s64)message.count) { return -1 }
+    length: usize = 0
+    if MlDsa44SignRaw(*signature[0], *length, Start(message),
+        cast(usize)message.count, *secret_key[0]) != OqsSuccess { return -1 }
+    return cast(s64)length
+}
+
+// Whether `signature` signs `message` for `public_key`.
+#program_export
+MlDsa44Verify :: (message: []u8, signature: []u8, public_key: []u8) -> bool {
+    if signature.count == 0 || public_key.count < MlDsa44PublicKeyBytes ||
+        !SizeFits(cast(s64)message.count) ||
+        !SizeFits(cast(s64)signature.count) { return false }
+    return MlDsa44VerifyRaw(Start(message), cast(usize)message.count,
+        *signature[0], cast(usize)signature.count,
+        *public_key[0]) == OqsSuccess
+}
+
+// Fills `output` from the system's secure random source.
+#program_export
+RandomBytes :: (output: []u8) {
+    if output.count == 0 || !SizeFits(cast(s64)output.count) { return }
+    RandomBytesRaw(*output[0], cast(usize)output.count)
+}
+
+// Zeroes `memory` in a way the compiler does not remove, for keys and other
+// secrets about to be released.
+#program_export
+Cleanse :: (memory: []u8) {
+    if memory.count == 0 || !SizeFits(cast(s64)memory.count) { return }
+    CleanseRaw(cast(*void)*memory[0], cast(usize)memory.count)
+}

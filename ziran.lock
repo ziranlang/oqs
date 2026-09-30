@@ -1,0 +1,23 @@
+{
+  "format": 1,
+  "packages": [
+    {
+      "commit": "e6b9e783747536f34700aab4bd10718c2fecab3f",
+      "dependencies": {},
+      "id": "pb34994bf01670ac3",
+      "name": "liboqs",
+      "ref": "main",
+      "source": true,
+      "url": "https://github.com/open-quantum-safe/liboqs.git"
+    }
+  ],
+  "root": {
+    "dependencies": {"liboqs": "pb34994bf01670ac3"},
+    "name": "Oqs"
+  },
+  "toolchain": {
+    "commit": "3afad2d5bb237c2e91147d3bab40adfdbc5d61e6",
+    "ref": "master",
+    "url": "https://github.com/ziranlang/ziran.git"
+  }
+}

@@ -1,0 +1,54 @@
+#import "oqs"
+
+public_key: [MlDsa44PublicKeyBytes]u8;
+secret_key: [MlDsa44SecretKeyBytes]u8;
+other_public: [MlDsa44PublicKeyBytes]u8;
+other_secret: [MlDsa44SecretKeyBytes]u8;
+signature: [MlDsa44SignatureBytes]u8;
+message: [32]u8;
+random: [64]u8;
+
+AllZero :: (bytes: []u8) -> bool {
+    index: s64 = 0
+    while index < cast(s64)bytes.count {
+        if bytes[index] != cast(u8)0 { return false }
+        index += 1
+    }
+    return true
+}
+
+// A signature verifies for its own message and key, and for nothing else.
+#program_export
+main :: () -> s32 {
+    if !MlDsa44KeyPair(public_key[:], secret_key[:]) { return 1 }
+    if !MlDsa44KeyPair(other_public[:], other_secret[:]) { return 2 }
+    index: s64 = 0
+    while index < 32 {
+        message[index] = cast(u8)index
+        index += 1
+    }
+    length := MlDsa44Sign(signature[:], message[:], secret_key[:])
+    if length <= 0 || length > MlDsa44SignatureBytes { return 3 }
+    if !MlDsa44Verify(message[:], signature[0:length], public_key[:]) { return 4 }
+    if MlDsa44Verify(message[:], signature[0:length], other_public[:]) { return 5 }
+    message[5] = cast(u8)99
+    if MlDsa44Verify(message[:], signature[0:length], public_key[:]) { return 6 }
+    message[5] = cast(u8)5
+    signature[0] = signature[0] ^ cast(u8)1
+    if MlDsa44Verify(message[:], signature[0:length], public_key[:]) { return 7 }
+
+    // An empty message can be signed and verified.
+    empty := MlDsa44Sign(signature[:], message[0:0], secret_key[:])
+    if empty <= 0 || !MlDsa44Verify(message[0:0], signature[0:empty], public_key[:]) { return 8 }
+
+    // Buffers too small for a key or signature are refused.
+    if MlDsa44KeyPair(public_key[0:10], secret_key[:]) { return 9 }
+    if MlDsa44Sign(signature[0:10], message[:], secret_key[:]) != -1 { return 10 }
+    if MlDsa44Verify(message[:], signature[0:0], public_key[:]) { return 11 }
+
+    RandomBytes(random[:])
+    if AllZero(random[:]) { return 12 }
+    Cleanse(secret_key[:])
+    if !AllZero(secret_key[:]) { return 13 }
+    return 0
+}
