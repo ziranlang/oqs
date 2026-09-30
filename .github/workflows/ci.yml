@@ -1,0 +1,42 @@
+name: CI
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [c, cpp, go, rust, py]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: package
+      - name: Read the pinned toolchain
+        id: toolchain
+        run: |
+          python3 -c 'import json; print("commit=" + json.load(open("package/ziran.lock"))["toolchain"]["commit"])' >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: ziranlang/ziran
+          ref: ${{ steps.toolchain.outputs.commit }}
+          path: ziran
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - name: Build the launcher
+        run: |
+          make -C ziran
+          echo "$PWD/ziran/build/bin" >> "$GITHUB_PATH"
+      - name: Build locked liboqs and test source and saved IR
+        working-directory: package
+        run: env -u DISPLAY -u WAYLAND_DISPLAY make check TARGET=${{ matrix.target }}
