@@ -16,7 +16,7 @@
     "name": "Oqs"
   },
   "toolchain": {
-    "commit": "f1ebf1a2b22f9d221264ff5657e35f278beef48f",
+    "commit": "384026ebf670ee5cda738bbbb3dfa3825310290f",
     "ref": "master",
     "url": "https://github.com/ziranlang/ziran.git"
   }
