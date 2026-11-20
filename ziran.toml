@@ -3,8 +3,8 @@ name = "Oqs"
 module_roots = ["src", "tests"]
 
 [toolchain]
-git = "https://github.com/ziranlang/ziran.git"
-ref = "master"
+git = "https://git.waozi.xyz/ziranlang/ziran.git"
+ref = "384026ebf670ee5cda738bbbb3dfa3825310290f"
 
 [dependencies.liboqs]
 git = "https://github.com/open-quantum-safe/liboqs.git"

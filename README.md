@@ -4,7 +4,7 @@ Post-quantum signatures and key exchange for Ziran, from [liboqs](https://github
 (Open Quantum Safe).
 
 ```sh
-ziran add https://github.com/ziranlang/oqs.git
+ziran add https://git.waozi.xyz/ziranlang/oqs.git
 ```
 
 ```jai
