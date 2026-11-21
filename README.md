@@ -55,13 +55,11 @@ make native
 ```
 
 Then link with `LDFLAGS=-L/path/to/build/native LDLIBS=-loqs`. Go uses cgo
-(`CGO_ENABLED=1`); Rust carries the flags in its generated Cargo project.
-Python uses ctypes and the shared `liboqs.so`; add that directory to
-`LD_LIBRARY_PATH` when running it. C and C++ call the same native ABI.
+(`CGO_ENABLED=1`). Both native backends call the same C ABI. Add the library
+directory to `LD_LIBRARY_PATH` when using the shared `liboqs.so`.
 
 `make check` builds the libraries and exercises signing, tamper rejection,
 empty messages, key exchange, random bytes, cleansing and short-buffer
-rejection on C, C++, Go, Rust and Python, from source and saved `.zir`.
-`make check TARGET=go` selects one backend. A C compiler, CMake, Python,
-Go and Cargo are required for the full check. The portable `.zib` VM does
-not call arbitrary C libraries; this package requires a native backend.
+rejection on C and Go, from source and saved `.zir`. `make check TARGET=go`
+selects one backend. A C compiler, CMake and Go are required for the full check.
+The package requires a native backend to call liboqs.

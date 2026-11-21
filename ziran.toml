@@ -4,7 +4,7 @@ module_roots = ["src", "tests"]
 
 [toolchain]
 git = "https://git.waozi.xyz/ziranlang/ziran.git"
-ref = "384026ebf670ee5cda738bbbb3dfa3825310290f"
+ref = "5db3d3c39425d5dfe4bfe4a84e6f6e2e5a810ad0"
 
 [dependencies.liboqs]
 git = "https://github.com/open-quantum-safe/liboqs.git"

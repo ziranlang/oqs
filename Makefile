@@ -33,9 +33,7 @@ $(LIBOQS_A): Makefile ziran.lock $(wildcard ziran.local.toml) | prepare
 	cp $(LIBOQS_BUILD)/lib/liboqs.a $@
 
 test: native
-	python3 "$$($(ZIRAN) pkg path ziran)/scripts/test_native_package.py" \
-		--ziran "$(ZIRAN)" --source tests/oqs_test.zi --entry oqs_test:main \
-		--library-dir $(BUILD)/native --libraries=-loqs --target $(TARGET)
+	ZIRAN="$(ZIRAN)" LOCK_FLAGS="$(LOCK_FLAGS)" sh tests/check.sh "$(TARGET)"
 
 clean:
 	rm -rf $(BUILD)
