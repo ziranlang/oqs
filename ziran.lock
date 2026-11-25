@@ -4,7 +4,7 @@
     {
       "commit": "e6b9e783747536f34700aab4bd10718c2fecab3f",
       "dependencies": {},
-      "id": "pc0ea8153332b3a7a",
+      "id": "src_github_com_open_quantum_safe_liboqs_e6b9e7837475",
       "name": "liboqs",
       "ref": "main",
       "source": true,
@@ -12,12 +12,12 @@
     }
   ],
   "root": {
-    "dependencies": {"liboqs": "pc0ea8153332b3a7a"},
+    "dependencies": {"liboqs": "src_github_com_open_quantum_safe_liboqs_e6b9e7837475"},
     "dependency_refs": {"liboqs": "main"},
     "name": "Oqs"
   },
   "toolchain": {
-    "commit": "5db3d3c39425d5dfe4bfe4a84e6f6e2e5a810ad0",
+    "commit": "0affd948205733bc370b6802f9730d8edf5e1e35",
     "ref": "5db3d3c39425d5dfe4bfe4a84e6f6e2e5a810ad0",
     "url": "https://git.waozi.xyz/ziranlang/ziran.git"
   }
